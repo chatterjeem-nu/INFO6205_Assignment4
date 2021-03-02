@@ -1,51 +1,102 @@
 package edu.neu.coe.info6205.union_find;
 
-import java.util.Random;
-import java.util.Scanner;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
+
+import edu.neu.coe.info6205.util.Benchmark_Timer;
 
 public class Client {
+
+    private static final int values = 15;
+    private static final int runs = 10;
+    private static final int n = 64;
+
+    public Client() {
+
+    }
+    private static int[] randomPairGen(int n) {
+        int[] res = new int[2];
+        res[0] = (int)(Math.random()*n);
+        res[1] = (int)(Math.random()*n);
+        return res;
+    }
+
+    private static int counts(int n, int runs, int pathCompression) {
+        int len = n;
+        double ven = 0;
+        for(int i=0;i<runs;i++) {
+            UF bi = null;
+            if (pathCompression==0) bi = new UF_HWQUPC(len,false);
+            if (pathCompression==1) bi = new UF_HWQUPC(len,true);
+            if (pathCompression==2) bi = new WQUPC(len);
+            int prs=0;
+            while(bi.components()>1) {
+                int[] tem = randomPairGen(len);
+                bi.connect(tem[0], tem[1]);
+                prs++;
+            }
+            ven+= prs;
+        }
+        return (int)(ven/runs);
+    }
+
+    private static double[] union_find_s(int n, int pathCompression) {
+        int len = n;
+        double[] res = new double[2];
+        double dpt = 0;
+        double prs = 0;
+        for(int i = 0; i< runs; i++) {
+            UF bi = null;
+            if (pathCompression==0) bi = new UF_HWQUPC(len,false);
+            if (pathCompression==1) bi = new UF_HWQUPC(len,true);
+            if (pathCompression==2) bi = new WQUPC(len);
+            while(bi.components()>1) {
+                int[] tem = randomPairGen(len);
+                bi.connect(tem[0], tem[1]);
+                prs++;
+            }
+            if(pathCompression==2) dpt +=((WQUPC) bi).averageDepth();
+            else dpt +=((UF_HWQUPC) bi).averageDepth();
+        }
+        res[0] = dpt/ runs;
+        res[1] = prs/ runs;
+        return res;
+    }
+
     public static void main(String[] args) {
-        int t = 0;
-        Client tests = new Client();
-        do{
+        UnaryOperator<Integer> pr = inp -> inp;
+        Consumer<Integer> fn1 = inp -> counts(inp,1,0);
+        Consumer<Integer> fn2 = inp -> counts(inp,1,2);
+        Consumer<Integer> pst = inp -> System.out.print("");
 
-            Scanner sc = new Scanner(System.in);
-            System.out.print("Please input the size of sites: ");
-            int n = sc.nextInt();
-            int g = 0;
-            int counts = 0;
+        Benchmark_Timer<Integer> timer1 = new Benchmark_Timer<>("WQU Benchmark",pr,fn1,pst);
+        Benchmark_Timer<Integer> timer3 = new Benchmark_Timer<>("WQUPC Benchmark",pr,fn2,pst);
 
-            Random rd = new Random();
-            UF_HWQUPC client = new UF_HWQUPC(n,true);
-            do{
-                int num1 = rd.nextInt(n);
-                int num2 = rd.nextInt(n);
+        try {
+            FileWriter wrt = new FileWriter("Assignment4_data.csv");
+            wrt.write("values, uncompressed_time, uncompressed_depth, uncompressed_pair, compressed_time, compressed_depth, compressed_pairs\n");
 
-                client.connect(num1,num2);
-
-                counts += tests.number(num1,num2);
-
-
-                g++;
-            }while (client.count>1);
-
-            System.out.println("the number of pairs is: "+g);
-            System.out.println("the number of connections happening is: "+counts);
-
-            t++;
-        }while(t<6);
-
-    }
-
-    public int number(int p, int q){
-        int numConnections;
-        if(p==q){
-            numConnections=0;
+            for(int i = 0; i< values; i++) {
+                System.out.println(i);
+                int k = (int)Math.pow(2, i);
+                k = k* n;
+                double[] temp;
+                wrt.write(k+",");
+                wrt.write(timer1.run(k, runs)+",");
+                temp = union_find_s(k,0);
+                wrt.write(temp[0]+",");
+                wrt.write(temp[1]+",");
+                wrt.write(timer3.run(k, runs)+",");
+                temp = union_find_s(k,2);
+                wrt.write(temp[0]+",");
+                wrt.write(temp[1]+"\n");
+            }
+            wrt.close();
         }
-        else {
-            numConnections=1;
+        catch (IOException e) {
+            e.printStackTrace();
         }
-        return numConnections;
     }
-
 }

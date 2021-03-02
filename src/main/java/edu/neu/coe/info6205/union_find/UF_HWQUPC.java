@@ -82,9 +82,8 @@ public class UF_HWQUPC implements UF {
         validate(p);
         int root = p;
         // TO BE IMPLEMENTED
-        while(root != parent[root]){
-
-            doPathCompression(root);
+        while(parent[root]!=root) {
+            if(pathCompression) parent[root] = parent[parent[root]];
             root = parent[root];
         }
         return root;
@@ -133,6 +132,23 @@ public class UF_HWQUPC implements UF {
         this.pathCompression = pathCompression;
     }
 
+    /**
+     * Used to find the average distance of all nodes from root after union find is completed.
+     *
+     * @return the average distance from root;
+     */
+    public double averageDepth() {
+        double ans = 0.0;
+        for(int i =0;i<parent.length;i++) {
+            int temp = i;
+            while(parent[temp]!=temp) {
+                ans+=1;
+                temp = parent[temp];
+            }
+        }
+        return ans/parent.length;
+    }
+
     @Override
     public String toString() {
         return "UF_HWQUPC:" + "\n  count: " + count +
@@ -174,25 +190,24 @@ public class UF_HWQUPC implements UF {
 
     private void mergeComponents(int i, int j) {
         // TO BE IMPLEMENTED make shorter root point to taller one
-        if(connected(i,j))
-            return;
-        int r1 = find(i);
-        int r2 = find(j);
-        if(height[r1]<height[r2]){
-            parent[r1] = r2;
-            updateHeight(r2,r1);
+        if(height[i]>height[j]) {
+            parent[j]=i;
+        }
+        else if(height[i]<height[j]){
+            parent[i]=j;
         }
         else {
-            parent[r2] = r1;
-            updateHeight(r1,r2);}
+            parent[j]=i;
+            height[i]++;
+        }
     }
 
     /**
      * This implements the single-pass path-halving mechanism of path compression
      */
-    private void doPathCompression(int i) {
+    private void doPathCompression(int i, int root) {
         // TO BE IMPLEMENTED update parent to value of grandparent
-        if(pathCompression)
-            parent[i] = parent[parent[i]];
+        //if(pathCompression)
+            //parent[i] = parent[parent[i]];
     }
 }
